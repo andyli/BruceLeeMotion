@@ -1,10 +1,15 @@
 package net.onthewings.bruceleemotion;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
@@ -12,34 +17,47 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
+import android.widget.ImageView;
 
 public class BruceLeeMotionActivity extends Activity implements Callback {
+	private String testFrame = "http://192.168.1.101/~andy/2012-06-06%2002.55.40.png";
 	private float picRatio = 16.0f / 9.0f;
 	private Camera camera;
-	private SurfaceView surfaceView;
-	private SurfaceHolder surfaceHolder;
+	private SurfaceView cameraSurfaceView;
+	private SurfaceHolder cameraSurfaceHolder;
+	private ImageView overlayView;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	setContentView(R.layout.main);
-    	surfaceView = (SurfaceView) findViewById(R.id.cameraView);
-    	surfaceHolder = surfaceView.getHolder();
-    	surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-	    surfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
-    	surfaceHolder.addCallback(this);
+    	
+    	cameraSurfaceView = (SurfaceView) findViewById(R.id.cameraSurfaceView);
+    	cameraSurfaceHolder = cameraSurfaceView.getHolder();
+    	cameraSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+	    cameraSurfaceHolder.setFormat(PixelFormat.TRANSLUCENT);
+    	cameraSurfaceHolder.addCallback(this);
+    	
+    	overlayView = (ImageView) findViewById(R.id.overlayView);
+    	try {
+    		URL url = new URL(testFrame);
+    		Bitmap bmp = BitmapFactory.decodeStream(url.openStream());
+        	overlayView.setImageBitmap(bmp);
+    	} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
     
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
-
-    	LayoutParams lparam = surfaceView.getLayoutParams();
-
-        int viewWidth = (int) (getWindow().getDecorView().getWidth() * 0.8);
-        int viewHeight = (int) (getWindow().getDecorView().getHeight() * 0.8);
+		
+		View decorView = getWindow().getDecorView();
+        int viewWidth = (int) (decorView.getWidth() * 0.8);
+        int viewHeight = (int) (decorView.getHeight() * 0.8);
 
         float surfaceRatio = (float)viewWidth/(float)viewHeight;
         if (surfaceRatio > picRatio) {
@@ -47,41 +65,25 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
         } else if (surfaceRatio < picRatio) {
         	viewHeight = (int) (viewWidth / picRatio);
         }
-        
+        Log.d("view size", viewWidth + " " + viewHeight);
+
+    	LayoutParams lparam;
+    	lparam = cameraSurfaceView.getLayoutParams();
     	lparam.width = viewWidth;
     	lparam.height = viewHeight;
-    	surfaceView.setLayoutParams(lparam);
-        Log.d("view size", viewWidth + " " + viewHeight);
+    	cameraSurfaceView.setLayoutParams(lparam);
     	
-		/*
-		Log.d("hasFocus", "" + hasFocus);
-		if (hasFocus) {
-			SurfaceView view1 = (SurfaceView) findViewById(R.id.view1);
-			
-			Camera.Parameters camParam = camera.getParameters();
-	        camParam.setJpegQuality(100);
-	        //camParam.setPreviewSize(view1.getWidth(), view1.getHeight());
-	        camera.setParameters(camParam);
-	        
-	        SurfaceHolder holder = view1.getHolder();
-	        try {
-	        	camera.setPreviewDisplay(holder);
-	        	camera.startPreview();
-	        } catch (IOException e) {
-	        	e.printStackTrace();
-	        }
-	        
-		} else {
-			camera.stopPreview();
-			camera.release();
-		}
-		*/
+    	lparam = overlayView.getLayoutParams();
+    	lparam.width = viewWidth;
+    	lparam.height = viewHeight;
+    	overlayView.setLayoutParams(lparam);
+        
     }
     
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        
-        int thumbWidth = holder.getSurfaceFrame().width();
-        int thumbHeight = holder.getSurfaceFrame().height();
+        Rect surfaceFrame = holder.getSurfaceFrame();
+        int thumbWidth = surfaceFrame.width();
+        int thumbHeight = surfaceFrame.height();
         
         //in case the surface is not layouted yet
         if (thumbWidth < 10) return;
@@ -129,6 +131,8 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
         	e.printStackTrace();
         }
         camera.startPreview();
+        
+        overlayView.bringToFront();
     }
 
     public void surfaceCreated(SurfaceHolder holder) {

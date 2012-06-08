@@ -1,5 +1,10 @@
 .DS_Store
 
+*.php
+*.png
+*.jpg
+*.jpeg
+
 # built application files
 *.apk
 *.ap_
