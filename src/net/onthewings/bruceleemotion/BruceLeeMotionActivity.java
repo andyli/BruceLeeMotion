@@ -1,8 +1,15 @@
 package net.onthewings.bruceleemotion;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import android.app.Activity;
@@ -11,6 +18,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusCallback;
+import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.ShutterCallback;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +28,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.widget.ImageView;
@@ -49,7 +60,50 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
     	} catch (Exception e) {
 			e.printStackTrace();
 		}
+    	
+    	overlayView.setOnClickListener(overlayViewClickListener);
     }
+    
+    private ShutterCallback onShutter = new ShutterCallback(){
+		public void onShutter() {
+			// No action to be perfomed on the Shutter callback.
+		}
+	};
+	
+	private PictureCallback onRaw = new PictureCallback(){
+		public void onPictureTaken(byte[] data, Camera camera) {
+			// No action taken on the raw data. Only action taken on jpeg data.
+		}
+	};
+
+	private PictureCallback onJpeg = new PictureCallback(){
+		public void onPictureTaken(byte[] data, Camera camera) {
+			String picName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".jpg";
+		    File file = new File(getExternalFilesDir(null), picName);
+
+		    try {
+		        OutputStream os = new FileOutputStream(file);
+		        os.write(data);
+		        os.close();
+		    } catch (IOException e) {
+		        Log.w("ExternalStorage", "Error writing " + file, e);
+		    }
+		}
+	};
+	
+	private AutoFocusCallback onAutoFocus = new AutoFocusCallback() {
+		public void onAutoFocus(boolean success, Camera camera) {
+			if (success) {
+				camera.takePicture(onShutter, onRaw, onJpeg);
+			}
+		}
+	};
+    
+    private OnClickListener overlayViewClickListener = new OnClickListener() {       
+        public void onClick(View v) {
+        	camera.autoFocus(onAutoFocus);
+        }
+    };
     
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {

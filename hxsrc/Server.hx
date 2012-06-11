@@ -12,14 +12,22 @@ import ufront.web.mvc.MvcApplication;
 import ufront.web.routing.RouteCollection;
 
 class Server {
+	static public var ABSOLUT_PATH(default, never):String = Web.getHostName() == "localhost" ? "http://localhost/bruceleemotion.onthewings.net/" : "http://bruceleemotion.onthewings.net/";
+	
 	static function main():Void {
-		Imports.pack("controller");
+		Imports.pack("controller", true);
 		var config = new AppConfiguration("controller", false);
+		
 		
 		var routes = new RouteCollection();
         routes.addRoute("/", { controller : "home", action : "index" } );
+        
         routes.addRoute("/motions/{id}/frame/{index}.png", { controller : "motions", action : "frame" } );
         routes.addRoute("/motions/{id}/frame/thumb/{index}_{thumb}.png", { controller : "motions", action : "frame" } );
+        
+        routes.addRoute("/motions/{id}/frame/random", { controller : "motions", action : "frame_random" } );
+        routes.addRoute("/motions/{id}/frame/thumb/random_{thumb}", { controller : "motions", action : "frame_random" } );
+        
         
 		var application = new MvcApplication(config, routes);
 		
@@ -27,8 +35,5 @@ class Server {
 			application.httpContext.addUrlFilter(new DirectoryUrlFilter("bruceleemotion.onthewings.net"));		
 		
 		application.execute();
-		
-		//var info = new Fast(Xml.parse(File.getContent("motions/brucelee/info.xml")));
-		//trace(info.node.info.att.name);
 	}
 }

@@ -1,8 +1,6 @@
 package;
 
 import haxe.io.Bytes;
-import sys.FileSystem;
-import sys.io.File;
 import thx.error.NullArgument;
 import ufront.web.mvc.ActionResult;
 import ufront.web.mvc.ControllerContext;
@@ -12,8 +10,9 @@ class ImageResult extends ActionResult
 	public var format:String;
 	public var image:Bytes;
 
-	public function new(image:Bytes, ?format:String)
+	public function new(image:Bytes, format:String)
 	{
+		NullArgument.throwIfNull(format);
 		this.format = format;
 		NullArgument.throwIfNull(image);
 		this.image = image;

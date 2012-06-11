@@ -1,5 +1,8 @@
 -main Server
 -php website
 -cp hxsrc
--lib ufront
+-cp ../ufront/src
+-lib thx
+-lib erazor
+-lib hxevents
 -lib ImageMagick

@@ -3,7 +3,10 @@ package controller;
 import sys.FileSystem;
 import sys.io.File;
 import ufront.web.mvc.Controller;
+import ufront.web.mvc.JsonResult;
 import php.imagemagick.Imagick;
+import php.Web;
+import haxe.xml.Fast;
 
 using StringTools;
 
@@ -20,7 +23,7 @@ class MotionsController extends Controller {
 	/**
 	 * Get the uri of thumbnail of an image. Creates the thumbnail if not exist.
 	 */
-	static function getThumb(path:String, index:Int, thumb:Int) {
+	static function getThumb(path:String, index:Int, thumb:Int):String {
 		var thumbPath = path + (thumb == 0 ? "" : "thumb/");
 		var uri = thumbPath + imageFileName(index, thumb);
 		if (FileSystem.exists(uri)) return uri;
@@ -37,7 +40,7 @@ class MotionsController extends Controller {
 	/**
 	 * Get the uri of mask of an image.
 	 */
-	static function getMask(id:String, index:Int, ?thumb:Int = 0) {
+	static function getMask(id:String, index:Int, ?thumb:Int = 0):String {
 		var path = BASE_PATH + id + "/mask/";
 		if (!FileSystem.exists(path)) FileSystem.createDirectory(path);
 		
@@ -58,7 +61,7 @@ class MotionsController extends Controller {
 	/**
 	 * Get the uri of the original image.
 	 */
-	static function getOriginal(id:String, index:Int, ?thumb:Int = 0) {
+	static function getOriginal(id:String, index:Int, ?thumb:Int = 0):String {
 		var path = BASE_PATH + id + "/original/";
 		if (!FileSystem.exists(path)) throw id + " does not exist.";
 		
@@ -68,11 +71,10 @@ class MotionsController extends Controller {
 			return path + imageFileName(index, thumb);
 	}
 	
-	
 	/**
-	 * Action for "/motions/{id}/frame/{index}.png", "/motions/{id}/frame/thumb/{index}_{thumb}.png".
+	 * Get the uri of the image frame for overlay.
 	 */
-	public function frame(id:String, index:Int, ?thumb:Int = 0) {
+	static function getFrame(id:String, index:Int, ?thumb:Int = 0) {
 		var path = BASE_PATH + id + "/frame/";
 		if (!FileSystem.exists(path)) FileSystem.createDirectory(path);
 		
@@ -98,6 +100,28 @@ class MotionsController extends Controller {
 			comp.writeImage(uri);
 		}
 		
-		return new ImageResult(File.getBytes(getThumb(path, index, thumb)), "png");
+		return getThumb(path, index, thumb);
+	}
+	
+	
+	/**
+	 * Action for "/motions/{id}/frame/{index}.png", "/motions/{id}/frame/thumb/{index}_{thumb}.png".
+	 */
+	public function frame(id:String, index:Int, ?thumb:Int = 0) {
+		return new ImageResult(File.getBytes(getFrame(id, index, thumb)), "png");
+	}
+	
+	/**
+	 * Action for "/motions/{id}/frame/random", "/motions/{id}/frame/thumb/random_{thumb}".
+	 */
+	public function frame_random(id:String, ?thumb:Int = 0) {
+		var info = new Fast(Xml.parse(File.getContent(BASE_PATH + id + "/info.xml")));
+		var numOfFrames = Std.parseInt(info.node.info.att.numOfFrames);
+		var index = Std.int(Math.random() * numOfFrames);
+		return new JsonResult({
+			index: index,
+			frame: Server.ABSOLUT_PATH + getFrame(id, index, thumb),
+			original: Server.ABSOLUT_PATH + getOriginal(id, index, thumb)
+		});
 	}
 }
