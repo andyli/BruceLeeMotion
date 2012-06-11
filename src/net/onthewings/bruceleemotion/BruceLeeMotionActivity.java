@@ -1,16 +1,26 @@
 package net.onthewings.bruceleemotion;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreProtocolPNames;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -23,6 +33,7 @@ import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
@@ -34,12 +45,55 @@ import android.view.Window;
 import android.widget.ImageView;
 
 public class BruceLeeMotionActivity extends Activity implements Callback {
-	private String testFrame = "http://192.168.1.101/~andy/2012-06-06%2002.55.40.png";
+	private String ABSOLUT_PATH = "http://bruceleemotion.onthewings.net/";
 	private float picRatio = 16.0f / 9.0f;
 	private Camera camera;
 	private SurfaceView cameraSurfaceView;
 	private SurfaceHolder cameraSurfaceHolder;
 	private ImageView overlayView;
+	
+	public String executeHttpGet(String URL) throws Exception {
+	    BufferedReader in = null;
+	    try 
+	    {
+	        HttpClient client = new DefaultHttpClient();
+	        client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, "android");
+	        HttpGet request = new HttpGet();
+	        request.setHeader("Content-Type", "text/plain; charset=utf-8");
+	        request.setURI(new URI(URL));
+	        HttpResponse response = client.execute(request);
+	        in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+
+	        StringBuffer sb = new StringBuffer("");
+	        String line = "";
+
+	        String NL = System.getProperty("line.separator");
+	        while ((line = in.readLine()) != null) 
+	        {
+	            sb.append(line + NL);
+	        }
+	        in.close();
+	        String page = sb.toString();
+	        //System.out.println(page);
+	        return page;
+	    } 
+	    finally 
+	    {
+	        if (in != null) 
+	        {
+	            try 
+	            {
+	                in.close();
+	            } 
+	            catch (IOException e)    
+	            {
+	                Log.d("BBB", e.toString());
+	            }
+	        }
+	    }
+	}
+	
+	public int index;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -54,9 +108,12 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
     	
     	overlayView = (ImageView) findViewById(R.id.overlayView);
     	try {
-    		URL url = new URL(testFrame);
+    		JSONObject jsonObject = new JSONObject(executeHttpGet(ABSOLUT_PATH + "motions/brucelee/frame/thumb/random_1024"));
+    		index = jsonObject.getInt("index");
+    		URL url = new URL(jsonObject.getString("original"));
     		Bitmap bmp = BitmapFactory.decodeStream(url.openStream());
         	overlayView.setImageBitmap(bmp);
+        	overlayView.setAlpha(150);
     	} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -78,8 +135,10 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 
 	private PictureCallback onJpeg = new PictureCallback(){
 		public void onPictureTaken(byte[] data, Camera camera) {
-			String picName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".jpg";
-		    File file = new File(getExternalFilesDir(null), picName);
+			String picName = index + "_" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".jpg";
+			File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/BruceLeeMotion/");
+			path.mkdirs();
+		    File file = new File(path, picName);
 
 		    try {
 		        OutputStream os = new FileOutputStream(file);
