@@ -1,6 +1,7 @@
 package net.onthewings.bruceleemotion;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -12,18 +13,29 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.CoreProtocolPNames;
 import org.json.JSONObject;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -34,6 +46,7 @@ import android.hardware.Camera.ShutterCallback;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Base64;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
@@ -52,21 +65,14 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 	private SurfaceHolder cameraSurfaceHolder;
 	private ImageView overlayView;
 	
-	public String executeHttpGet(String URL) throws Exception {
-	    BufferedReader in = null;
-	    try 
-	    {
-	        HttpClient client = new DefaultHttpClient();
-	        client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, "android");
-	        HttpGet request = new HttpGet();
-	        request.setHeader("Content-Type", "text/plain; charset=utf-8");
-	        request.setURI(new URI(URL));
-	        HttpResponse response = client.execute(request);
-	        in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
+	public String getStringFromHttpResponse(HttpResponse response) {
+		BufferedReader in = null;
+		try {
+			in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+	
 	        StringBuffer sb = new StringBuffer("");
 	        String line = "";
-
+	
 	        String NL = System.getProperty("line.separator");
 	        while ((line = in.readLine()) != null) 
 	        {
@@ -76,9 +82,9 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 	        String page = sb.toString();
 	        //System.out.println(page);
 	        return page;
-	    } 
-	    finally 
-	    {
+	    } catch (IOException e) {
+	    	Log.e("Error", e.getMessage());
+	    } finally {
 	        if (in != null) 
 	        {
 	            try 
@@ -91,9 +97,36 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 	            }
 	        }
 	    }
+		
+		return "";
+	}
+	
+	public String executeHttpGet(String URL) throws Exception {
+	    BufferedReader in = null;
+	    
+        HttpClient client = new DefaultHttpClient();
+        client.getParams().setParameter(CoreProtocolPNames.USER_AGENT, "android");
+        HttpGet request = new HttpGet();
+        request.setHeader("Content-Type", "text/plain; charset=utf-8");
+        request.setURI(new URI(URL));
+        HttpResponse response = client.execute(request);
+        return getStringFromHttpResponse(response);
 	}
 	
 	public int index;
+	
+	public void loadFrame() {
+		try {
+    		JSONObject jsonObject = new JSONObject(executeHttpGet(ABSOLUT_PATH + "motions/brucelee/frame/thumb/random_1024"));
+    		index = jsonObject.getInt("index");
+    		URL url = new URL(jsonObject.getString("original"));
+    		Bitmap bmp = BitmapFactory.decodeStream(url.openStream());
+        	overlayView.setImageBitmap(bmp);
+        	overlayView.setAlpha(150);
+    	} catch (Exception e) {
+    		Log.e("Error", e.getMessage());
+		}
+	}
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -107,17 +140,7 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
     	cameraSurfaceHolder.addCallback(this);
     	
     	overlayView = (ImageView) findViewById(R.id.overlayView);
-    	try {
-    		JSONObject jsonObject = new JSONObject(executeHttpGet(ABSOLUT_PATH + "motions/brucelee/frame/thumb/random_1024"));
-    		index = jsonObject.getInt("index");
-    		URL url = new URL(jsonObject.getString("original"));
-    		Bitmap bmp = BitmapFactory.decodeStream(url.openStream());
-        	overlayView.setImageBitmap(bmp);
-        	overlayView.setAlpha(150);
-    	} catch (Exception e) {
-			e.printStackTrace();
-		}
-    	
+    	loadFrame();    	
     	overlayView.setOnClickListener(overlayViewClickListener);
     }
     
@@ -135,18 +158,41 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 
 	private PictureCallback onJpeg = new PictureCallback(){
 		public void onPictureTaken(byte[] data, Camera camera) {
-			String picName = index + "_" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".jpg";
+			Date date = new Date();
+			String picName = index + "_" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(date) + ".jpg";
 			File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/BruceLeeMotion/");
 			path.mkdirs();
 		    File file = new File(path, picName);
 
 		    try {
+		    	/*
+		    	 * save to sdcard
+		    	 */
 		        OutputStream os = new FileOutputStream(file);
 		        os.write(data);
 		        os.close();
-		    } catch (IOException e) {
-		        Log.w("ExternalStorage", "Error writing " + file, e);
+		        
+		        /*
+		         * upload to server
+		         */
+	            HttpClient httpclient = new DefaultHttpClient();
+	            HttpPost httppost = new HttpPost(ABSOLUT_PATH + "motions/brucelee/upload/" + index);
+	            
+	            MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
+                entity.addPart("date", new StringBody(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date)));
+                entity.addPart("photo", new FileBody(file));
+	            httppost.setEntity(entity);
+	            
+	            HttpResponse response = httpclient.execute(httppost);
+	            JSONObject jsonObject = new JSONObject(getStringFromHttpResponse(response));
+	            //HttpEntity rEntity = response.getEntity();
+	            //is = entity.getContent();
+	            httpclient.getConnectionManager().shutdown(); 
+		    } catch (Exception e) {
+		        Log.e("Error", e.getMessage());
 		    }
+		    
+		    camera.startPreview();
 		}
 	};
 	

@@ -2,10 +2,12 @@ package controller;
 
 import sys.FileSystem;
 import sys.io.File;
+import sys.io.FileOutput;
 import ufront.web.mvc.Controller;
 import ufront.web.mvc.JsonResult;
 import php.imagemagick.Imagick;
 import php.Web;
+import haxe.io.Bytes;
 import haxe.xml.Fast;
 
 using StringTools;
@@ -123,5 +125,75 @@ class MotionsController extends Controller {
 			frame: Server.ABSOLUT_PATH + getFrame(id, index, thumb),
 			original: Server.ABSOLUT_PATH + getOriginal(id, index, thumb)
 		});
+	}
+	
+	/**
+	 * Action for "/motions/{id}/upload/{index}"
+	 */
+	public function upload(id:String, index:Int) {
+		var date = Date.fromString(controllerContext.request.post.get("date"));
+		var uploadHandler = new UploadHandler(
+			id, 
+			index, 
+			date
+		);
+		
+		controllerContext.request.setUploadHandler(uploadHandler);
+		while (!uploadHandler.isEnded)
+			Sys.sleep(0.01);
+		
+		return new JsonResult({
+			id: id,
+			index: index,
+			photo: Server.ABSOLUT_PATH + uploadHandler.path + uploadHandler.fileName
+		});
+		
+	}
+}
+
+class UploadHandler implements ufront.web.IHttpUploadHandler {
+	public var path(default, null):String;
+	public var fileName(default, null):String;
+	public var isEnded(default, null):Bool;
+	
+	var id:String;
+	var index:Int;
+	var date:Date;
+	var file:FileOutput;
+	public var processed(default, null):Int;
+	
+	public function new(id:String, index:Int, date:Date):Void {
+		this.id = id;
+		this.index = index;
+		this.date = date;
+		isEnded = false;
+		processed = 0;
+		
+		path = MotionsController.BASE_PATH + id + "/photo/";
+		if (!FileSystem.exists(path)) FileSystem.createDirectory(path);
+		path += Std.string(index).lpad("0", 4) + "/";
+		if (!FileSystem.exists(path)) FileSystem.createDirectory(path);
+	}
+	
+	public function uploadStart(name:String, filename:String):Void {
+		fileName = date.toString() + ".png";
+		if (FileSystem.exists(path + fileName)) {
+			var num = 0;
+			do {
+				fileName = date.toString() + "_" + Std.string(num++).lpad("0", 3) + ".png";
+			} while (FileSystem.exists(path + fileName));
+		}
+		file = File.write(path + fileName, true);
+	}
+	
+	public function uploadProgress(bytes:Bytes, pos:Int, len:Int):Void {
+		isEnded = true;
+		file.writeBytes(bytes, pos, len);
+		processed += len;
+	}
+	
+	public function uploadEnd():Void {
+		file.close();
+		isEnded = true;
 	}
 }

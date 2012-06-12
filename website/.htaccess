@@ -541,6 +541,7 @@ AddCharset utf-8 .css .js .xml .json .rss .atom
   php_value session.cookie_httponly true
 </IfModule>
 
+php_value upload_max_filesize 100M
 
 RewriteBase /bruceleemotion.onthewings.net/
 

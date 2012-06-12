@@ -28,6 +28,8 @@ class Server {
         routes.addRoute("/motions/{id}/frame/random", { controller : "motions", action : "frame_random" } );
         routes.addRoute("/motions/{id}/frame/thumb/random_{thumb}", { controller : "motions", action : "frame_random" } );
         
+        routes.addRoute("/motions/{id}/upload/{index}", { controller : "motions", action : "upload" } );
+        
         
 		var application = new MvcApplication(config, routes);
 		
