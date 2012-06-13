@@ -117,7 +117,7 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 	
 	public void loadFrame() {
 		try {
-    		JSONObject jsonObject = new JSONObject(executeHttpGet(ABSOLUT_PATH + "motions/brucelee/frame/thumb/random_1024"));
+    		JSONObject jsonObject = new JSONObject(executeHttpGet(ABSOLUT_PATH + "motions/brucelee/frame/thumb/random_800"));
     		index = jsonObject.getInt("index");
     		URL url = new URL(jsonObject.getString("original"));
     		Bitmap bmp = BitmapFactory.decodeStream(url.openStream());
@@ -192,6 +192,7 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
 		        Log.e("Error", e.getMessage());
 		    }
 		    
+		    loadFrame();
 		    camera.startPreview();
 		}
 	};

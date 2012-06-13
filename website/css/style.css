@@ -219,18 +219,45 @@ td { vertical-align: top; }
    ========================================================================== */
 
 
+#container, header, footer
+{
+	font-family:"Palatino Linotype", "Book Antiqua", Palatino, serif;
+	width:800px;
+	padding:0;
+	margin:0 auto;
+	color:#666;
+}
 
+#bruce
+{
+	width: 800px;
+	height: 450px;
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
 
+.title
+{
+	background-color:#C00;
+	color:#FFF;
+	padding-left:20px;
+	text-align: left;
+}
 
+#main
+{
+	text-align:justify;
+}
 
+#qr
+{
+	text-align:center;
+}
 
-
-
-
-
-
-
-
+header, footer
+{
+	text-align:center;
+}
 
 
 /* ==|== media queries ======================================================

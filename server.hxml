@@ -6,3 +6,4 @@
 -lib erazor
 -lib hxevents
 -lib ImageMagick
+-lib casalib

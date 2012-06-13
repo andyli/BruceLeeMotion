@@ -1,0 +1,6 @@
+-main Browser
+-js website/js/script.js
+-cp hxsrc
+-lib jQueryExtern
+--dead-code-elimination
+#--js-modern

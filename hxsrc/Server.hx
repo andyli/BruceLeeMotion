@@ -30,6 +30,12 @@ class Server {
         
         routes.addRoute("/motions/{id}/upload/{index}", { controller : "motions", action : "upload" } );
         
+        routes.addRoute("/motions/{id}/photo/{index}/random", { controller : "motions", action : "photo" } );
+        routes.addRoute("/motions/{id}/photo/thumb/{index}/random_{thumb}", { controller : "motions", action : "photo" } );
+        
+        routes.addRoute("/motions/{id}/comp/{index}.png", { controller : "motions", action : "comp" } );
+        routes.addRoute("/motions/{id}/comp/thumb/{index}_{thumb}.png", { controller : "motions", action : "comp" } );
+        
         
 		var application = new MvcApplication(config, routes);
 		
