@@ -2,5 +2,6 @@
 -js website/js/script.js
 -cp hxsrc
 -lib jQueryExtern
+-lib casalib
 --dead-code-elimination
 #--js-modern

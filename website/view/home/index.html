@@ -34,12 +34,16 @@
        chromium.org/developers/how-tos/chrome-frame-getting-started -->
   <!--[if lt IE 7]><p class=chromeframe>Your browser is <em>ancient!</em> <a href="http://browsehappy.com/">Upgrade to a different browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to experience this site.</p><![endif]-->
   <header>
-	<img src="img/logo.jpg" alt="Bruce Lee Motion" />
+	<img id="logo" src="img/logo.jpg" alt="Bruce Lee Motion" />
   </header>
   <div id="container">
 	<div id="main">
 		<div id="bruce">
-			<img src="motions/brucelee/original/thumb/0002_800.png" alt="Bruce Lee" />
+			<img src="motions/brucelee/original/thumb/0000_800.png" alt="Bruce Lee" />
+		</div>
+		<div id="bruce-control">
+			<button id="toggle-play-btn">pause</button>
+			<button id="toggle-slow-btn">slow-mo</button>
 		</div>
 		
 		<div class="title"><h1>Introduction</h1></div>
@@ -49,12 +53,12 @@
 			We provide guidelines for the audience to perform martial arts of Bruce Lee frame by frame; 
 			all the performance by the user, is combined together as a stop motion animation, so as to inherit the spirit of Bruce Lee from classic movies.
 		</p>
-		<div class="title"><h1>Demo Video</h1></div>
+		<!--<div class="title"><h1>Demo Video</h1></div>-->
 		<div class="title"><h1>About Us</h1></div>
-		<p>We are Andy and Stella from BScCM, City University of Hong Kong.</p>
+		<p>We are Andy and Stella from School of Creative Media, City University of Hong Kong.</p>
 		<h3>Contact:</h3>
-		<p>Stella: <a href="mailto:http://localhost/bruceleemotion.onthewings.net/">balla730@@gmail.com</a></p>
 		<p>Andy: <a href="mailto:andy@@onthewings.net">andy@@onthewings.net</a></p>
+		<p>Stella: <a href="mailto:http://localhost/bruceleemotion.onthewings.net/">balla730@@gmail.com</a></p>
 	</div>
 		
   </div>
@@ -62,13 +66,14 @@
   	<div class="title"><h1>Welcome to Share:)</h1></div>
 	<div id="qr"><img src="img/img.png" alt="QR code of this web site" /></div>
 	
-	<h4>BScCM 2011-2012 - BruceLeeMotion	 by Andy and Stella. All rights reserved.</h4>
+	<h4>2011-2012 - BruceLeeMotion	 by Andy and Stella. All rights reserved.</h4>
   </footer>
 
 
   <!-- JavaScript at the bottom for fast page loading -->
 
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
 
   <!-- scripts concatenated and minified via build script -->
   <script src="js/plugins.js"></script>

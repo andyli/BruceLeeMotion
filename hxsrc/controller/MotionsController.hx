@@ -198,6 +198,14 @@ class MotionsController extends Controller {
 		return new ImageResult(File.getBytes(getFrame(id, index, thumb)), "png");
 	}
 	
+	
+	/**
+	 * Action for "/motions/{id}/original/{index}.png", "/motions/{id}/original/thumb/{index}_{thumb}.png".
+	 */
+	public function original(id:String, index:Int, ?thumb:Int = 0) {
+		return new ImageResult(File.getBytes(getOriginal(id, index, thumb)), "png");
+	}
+	
 	/**
 	 * Action for "/motions/{id}/frame/random", "/motions/{id}/frame/thumb/random_{thumb}".
 	 */
@@ -245,8 +253,16 @@ class MotionsController extends Controller {
 	/**
 	 * Action for 
 	 */
-	public function comp(id:String, index:Int, ?thumb:Int = 0) {
-		return new ImageResult(File.getBytes(getComp(id, index, thumb)), "png");
+	public function comp(id:String, ?thumb:Int = 0) {
+		var info = new Fast(Xml.parse(File.getContent(BASE_PATH + id + "/info.xml")));
+		var numOfFrames = Std.parseInt(info.node.info.att.numOfFrames);
+		var imageUrls = [];
+		for (index in 0...numOfFrames) {
+			imageUrls.push({
+				comp: Server.ABSOLUT_PATH + getComp(id, index, thumb)
+			});
+		}
+		return new JsonResult(imageUrls);
 	}
 }
 

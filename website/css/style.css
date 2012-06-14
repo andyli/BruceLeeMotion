@@ -218,22 +218,33 @@ td { vertical-align: top; }
    Author:
    ========================================================================== */
 
+* {
+	font-family:"Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
 
 #container, header, footer
 {
-	font-family:"Palatino Linotype", "Book Antiqua", Palatino, serif;
-	width:800px;
+	width:95%;
 	padding:0;
 	margin:0 auto;
 	color:#666;
 }
 
+#logo {
+	width: 100%;
+}
+
 #bruce
 {
-	width: 800px;
-	height: 450px;
-	margin-top: 1em;
-	margin-bottom: 1em;
+	width: 100%;
+	margin: 1em 0 1em 0;
+	padding: 0;
+}
+
+#bruce img {
+	width: 100%;
+	margin: 0;
+	padding: 0;
 }
 
 .title
@@ -254,6 +265,11 @@ td { vertical-align: top; }
 	text-align:center;
 }
 
+#qr img {
+	max-width: 420px;
+	width: 100%;
+}
+
 header, footer
 {
 	text-align:center;
@@ -266,8 +282,13 @@ header, footer
    Modify as content requires.
    ========================================================================== */
 
-@media only screen and (min-width: 35em) {
-  /* Style adjustments for viewports that meet the condition */
+@media only screen and (min-width: 800px) {
+	/* Style adjustments for viewports that meet the condition */
+ 	
+ 	#container, header, footer
+	{
+		width:800px;
+	}
 }
 
 
