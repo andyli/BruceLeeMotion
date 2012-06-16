@@ -21,6 +21,7 @@ Browser.getSuitableImageWidth = function() {
 Browser.main = function() {
 	var progressbar = new $("<div></div>").appendTo(new $("#bruce"));
 	progressbar.progressbar();
+	progressbar.hide().fadeTo("slow",0.8);
 	$.getJSON("motions/brucelee/comp_" + Browser.getSuitableImageWidth() + "/",{ r : Math.random()},function(json) {
 		Browser.numOfFrames = json.length;
 		var _g = 0;

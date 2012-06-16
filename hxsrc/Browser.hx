@@ -46,6 +46,7 @@ class Browser {
 		 */
 		var progressbar = new JQuery("<div></div>").appendTo(new JQuery("#bruce"));
 		untyped progressbar.progressbar();
+		progressbar.hide().fadeTo("slow", 0.8);
 		
 		JQueryStatic.getJSON("motions/brucelee/comp_"+getSuitableImageWidth()+"/", {r:Math.random()}, function(json:Array<{comp:String}>){
 			numOfFrames = json.length;
