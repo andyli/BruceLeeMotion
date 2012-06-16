@@ -16,7 +16,10 @@ class Browser {
 	
 	static function imageLoop(fps:Float):Void {
 		if (timer != null) timer.stop();
-		if (fps == 0) return;
+		if (fps == 0) {
+			timer = null;
+			return;
+		}
 		
 		timer = new Timer(Std.int(1/fps * 1000));
     	timer.run = function(){
@@ -37,9 +40,13 @@ class Browser {
 	}
 	
 	static public function main():Void {
+		
 		/*
 		 * preload images
-		 */		
+		 */
+		var progressbar = new JQuery("<div></div>").appendTo(new JQuery("#bruce"));
+		untyped progressbar.progressbar();
+		
 		JQueryStatic.getJSON("motions/brucelee/comp_"+getSuitableImageWidth()+"/", {r:Math.random()}, function(json:Array<{comp:String}>){
 			numOfFrames = json.length;
 			for (item in json) {
@@ -49,6 +56,10 @@ class Browser {
 			untyped new JQuery({}).imageLoader({
 			    images: images,
 			    async: 5,
+			    complete: function(e, ui) {
+			    	var i:Int = ui.i;
+			    	progressbar.progressbar("value" , i.map(0, numOfFrames, 0, 100));
+			    },
 			    allcomplete: function(e, ui:Array<Dynamic>) {
 			    	new JQuery(function(){
 				    	var bruce = new JQuery("#bruce").html("");
@@ -72,17 +83,27 @@ class Browser {
 				    	new JQuery("#toggle-slow-btn").click(function(evt:jQuery.Event){
 				    		var btn = new JQuery("#toggle-slow-btn");
 				    		if (btn.html() == "slow-mo") {
-				    			imageLoop(2);
+				    			if (timer != null)
+				    				imageLoop(2);
+				    			else
+				    				fps = 2;
 				    			btn.html("normal");
 				    		} else {
-				    			imageLoop(12);
+				    			if (timer != null)
+				    				imageLoop(12);
+				    			else
+				    				fps = 12;
 				    			btn.html("slow-mo");
 				    		}
 				    	});
+				    	
+				    	new JQuery("#bruce-control").show("slow");
 			    	});
 			    }
 			});
 		});
+		
+		
 		
 		/*
 		JQueryStatic.get("motions/brucelee/comp/thumb/" + index + "_" + thumb + ".png")

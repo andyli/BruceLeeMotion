@@ -2,7 +2,10 @@ var Browser = function() { }
 Browser.__name__ = true;
 Browser.imageLoop = function(fps) {
 	if(Browser.timer != null) Browser.timer.stop();
-	if(fps == 0) return;
+	if(fps == 0) {
+		Browser.timer = null;
+		return;
+	}
 	Browser.timer = new haxe.Timer(1 / fps * 1000 | 0);
 	Browser.timer.run = function() {
 		new $("#bruce-" + Browser.currentIndex).hide();
@@ -16,6 +19,8 @@ Browser.getSuitableImageWidth = function() {
 	return w >= 800?800:320;
 }
 Browser.main = function() {
+	var progressbar = new $("<div></div>").appendTo(new $("#bruce"));
+	progressbar.progressbar();
 	$.getJSON("motions/brucelee/comp_" + Browser.getSuitableImageWidth() + "/",{ r : Math.random()},function(json) {
 		Browser.numOfFrames = json.length;
 		var _g = 0;
@@ -24,7 +29,10 @@ Browser.main = function() {
 			++_g;
 			Browser.images.push(item.comp);
 		}
-		new $({ }).imageLoader({ images : Browser.images, async : 5, allcomplete : function(e,ui) {
+		new $({ }).imageLoader({ images : Browser.images, async : 5, complete : function(e,ui) {
+			var i = ui.i;
+			progressbar.progressbar("value",100 * (i / Browser.numOfFrames));
+		}, allcomplete : function(e,ui) {
 			new $(function() {
 				var bruce = new $("#bruce").html("");
 				var _g = 0;
@@ -47,13 +55,14 @@ Browser.main = function() {
 				new $("#toggle-slow-btn").click(function(evt) {
 					var btn = new $("#toggle-slow-btn");
 					if(btn.html() == "slow-mo") {
-						Browser.imageLoop(2);
+						if(Browser.timer != null) Browser.imageLoop(2); else Browser.fps = 2;
 						btn.html("normal");
 					} else {
-						Browser.imageLoop(12);
+						if(Browser.timer != null) Browser.imageLoop(12); else Browser.fps = 12;
 						btn.html("slow-mo");
 					}
 				});
+				new $("#bruce-control").show("slow");
 			});
 		}});
 	});
