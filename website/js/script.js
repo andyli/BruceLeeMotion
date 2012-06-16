@@ -29,9 +29,9 @@ Browser.main = function() {
 			++_g;
 			Browser.images.push(item.comp);
 		}
+		var loaded = 0;
 		new $({ }).imageLoader({ images : Browser.images, async : 5, complete : function(e,ui) {
-			var i = ui.i;
-			progressbar.progressbar("value",100 * (i / Browser.numOfFrames));
+			progressbar.progressbar("value",100 * (++loaded / Browser.numOfFrames));
 		}, allcomplete : function(e,ui) {
 			new $(function() {
 				var bruce = new $("#bruce").html("");

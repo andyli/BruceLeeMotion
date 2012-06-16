@@ -53,12 +53,12 @@ class Browser {
 				images.push(item.comp);
 			}
 			
+			var loaded = 0;
 			untyped new JQuery({}).imageLoader({
 			    images: images,
 			    async: 5,
 			    complete: function(e, ui) {
-			    	var i:Int = ui.i;
-			    	progressbar.progressbar("value" , i.map(0, numOfFrames, 0, 100));
+			    	progressbar.progressbar("value" , (++loaded).map(0, numOfFrames, 0, 100));
 			    },
 			    allcomplete: function(e, ui:Array<Dynamic>) {
 			    	new JQuery(function(){
