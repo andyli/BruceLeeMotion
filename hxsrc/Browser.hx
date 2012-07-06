@@ -31,12 +31,10 @@ class Browser {
 	var fps:Float;
 	
 	function setDisplayMode(v:DisplayMode) {
-		if (displayMode.enumEq(v)) return v;
-		
 		var pDisplayMode = displayMode;
 		displayMode = v;
 		
-		if (pDisplayMode == null) return v;
+		if (pDisplayMode == null || pDisplayMode.enumEq(displayMode)) return displayMode;
 		
 		var mainDiv = new JQuery("#main");
 		mainDiv.removeClass(pDisplayMode.enumConstructor());
