@@ -1,100 +1,45 @@
 var $estr = function() { return js.Boot.__string_rec(this,''); };
-var DisplayMode = { __ename__ : true, __constructs__ : ["PlaybackMode","CaptureMode"] }
-DisplayMode.PlaybackMode = ["PlaybackMode",0];
-DisplayMode.PlaybackMode.toString = $estr;
-DisplayMode.PlaybackMode.__enum__ = DisplayMode;
-DisplayMode.CaptureMode = ["CaptureMode",1];
-DisplayMode.CaptureMode.toString = $estr;
-DisplayMode.CaptureMode.__enum__ = DisplayMode;
-var Browser = function() { }
-Browser.__name__ = true;
-Browser.setDisplayMode = function(v) {
-	if(Type.enumEq(Browser.displayMode,v)) return v;
-	var pDisplayMode = Browser.displayMode;
-	Browser.displayMode = v;
-	var mainDiv = new $("#main");
-	mainDiv.removeClass(pDisplayMode[0]);
-	switch( (pDisplayMode)[1] ) {
-	case 0:
-		Browser.imageLoop(0);
-		break;
-	case 1:
-		break;
-	}
-	switch( (Browser.displayMode)[1] ) {
-	case 0:
-		Browser.imageLoop(Browser.fps);
-		break;
-	case 1:
-		if(!navigator.getUserMedia) js.Lib.alert("getUserMedia() is not supported or not enabled in your browser."); else {
-			var videoDiv = new $("#capture video");
-			videoDiv.height(videoDiv.width() / (16 / 9)).fadeIn();
-			navigator.getUserMedia({ video : true},function(stream) {
-				videoDiv.attr("src",navigator.webkitGetUserMedia?window.webkitURL.createObjectURL(stream):stream);
-			},function(err) {
-				js.Lib.alert("Error: " + err);
-			});
-		}
-		break;
-	}
-	mainDiv.addClass(Browser.displayMode[0]);
-	return Browser.displayMode;
-}
-Browser.imageLoop = function(fps) {
-	if(Browser.timer != null) Browser.timer.stop();
-	if(fps == 0) {
-		Browser.timer = null;
-		new $("#toggle-play-btn").html("play");
-		return;
-	}
-	Browser.timer = new haxe.Timer(1 / fps * 1000 | 0);
-	Browser.timer.run = function() {
-		new $("#playback-" + Browser.currentIndex).hide();
-		Browser.currentIndex = org.casalib.util.NumberUtil.loopIndex(++Browser.currentIndex,Browser.numOfFrames);
-		new $("#playback-" + Browser.currentIndex).show();
-	};
-	Browser.fps = fps;
-	new $("#toggle-play-btn").html("pause");
-}
-Browser.getSuitableImageWidth = function() {
-	var w = new $(js.Lib.document).width();
-	return w >= 800?800:320;
-}
-Browser.main = function() {
+var Browser = function() {
+	this.numOfFrames = 0;
+	this.currentIndex = -1;
+	var _g = this;
+	this.setDisplayMode(DisplayMode.PlaybackMode);
 	var progressbar = new $("<div></div>").appendTo(new $("#playback"));
-	progressbar.progressbar();
+	progressbar.progressbar(null);
 	progressbar.hide().fadeTo("slow",0.8);
 	$.getJSON("motions/brucelee/comp_" + Browser.getSuitableImageWidth() + "/",{ r : Math.random()},function(json) {
-		Browser.numOfFrames = json.length;
-		var _g = 0;
-		while(_g < json.length) {
-			var item = json[_g];
-			++_g;
-			Browser.images.push(item.comp);
+		_g.numOfFrames = json.length;
+		_g.images = [];
+		var _g1 = 0;
+		while(_g1 < json.length) {
+			var item = json[_g1];
+			++_g1;
+			_g.images.push(item.comp);
 		}
 		var loaded = 0;
-		new $({ }).imageLoader({ images : Browser.images, async : 5, complete : function(e,ui) {
-			progressbar.progressbar("value",100 * (++loaded / Browser.numOfFrames));
+		new $({ }).imageLoader({ images : _g.images, async : 5, complete : function(e,ui) {
+			var a1 = 100 * (++loaded / _g.numOfFrames);
+			if(a1 != null) progressbar.progressbar("value",a1); else progressbar.progressbar("value");
 		}, allcomplete : function(e,ui) {
 			new $(function() {
 				var playback = new $("#playback").html("");
-				var _g = 0;
-				while(_g < ui.length) {
-					var item = ui[_g];
-					++_g;
+				var _g1 = 0;
+				while(_g1 < ui.length) {
+					var item = ui[_g1];
+					++_g1;
 					new $(item.img).attr("id","playback-" + Std.string(item.i)).appendTo(playback).hide();
 				}
-				Browser.imageLoop(12);
+				_g.imageLoop(12);
 				new $("#toggle-play-btn").click(function(evt) {
-					if(new $("#toggle-play-btn").html() == "pause") Browser.imageLoop(0); else Browser.imageLoop(Browser.fps);
+					if(new $("#toggle-play-btn").html() == "pause") _g.imageLoop(0); else _g.imageLoop(_g.fps);
 				});
 				new $("#toggle-slow-btn").click(function(evt) {
 					var btn = new $("#toggle-slow-btn");
 					if(btn.html() == "slow-mo") {
-						if(Browser.timer != null) Browser.imageLoop(2); else Browser.fps = 2;
+						if(_g.timer != null) _g.imageLoop(2); else _g.fps = 2;
 						btn.html("normal");
 					} else {
-						if(Browser.timer != null) Browser.imageLoop(12); else Browser.fps = 12;
+						if(_g.timer != null) _g.imageLoop(12); else _g.fps = 12;
 						btn.html("slow-mo");
 					}
 				});
@@ -104,11 +49,78 @@ Browser.main = function() {
 	});
 	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 	new $("#toggle-capture-btn").click(function(evt) {
-		Browser.setDisplayMode(DisplayMode.CaptureMode);
+		_g.setDisplayMode(DisplayMode.CaptureMode);
 	});
+};
+Browser.__name__ = true;
+Browser.getSuitableImageWidth = function() {
+	var w = new $(js.Lib.document).width();
+	return w >= 800?800:320;
+}
+Browser.main = function() {
+	Browser.instance = new Browser();
+}
+Browser.prototype = {
+	imageLoop: function(fps) {
+		var _g = this;
+		if(this.timer != null) this.timer.stop();
+		if(fps == 0) {
+			this.timer = null;
+			new $("#toggle-play-btn").html("play");
+			return;
+		}
+		this.timer = new haxe.Timer(1 / fps * 1000 | 0);
+		this.timer.run = function() {
+			new $("#playback-" + _g.currentIndex).hide();
+			_g.currentIndex = org.casalib.util.NumberUtil.loopIndex(++_g.currentIndex,_g.numOfFrames);
+			new $("#playback-" + _g.currentIndex).show();
+		};
+		this.fps = fps;
+		new $("#toggle-play-btn").html("pause");
+	}
+	,setDisplayMode: function(v) {
+		if(Type.enumEq(this.displayMode,v)) return v;
+		var pDisplayMode = this.displayMode;
+		this.displayMode = v;
+		if(pDisplayMode == null) return v;
+		var mainDiv = new $("#main");
+		mainDiv.removeClass(pDisplayMode[0]);
+		switch( (pDisplayMode)[1] ) {
+		case 0:
+			this.imageLoop(0);
+			break;
+		case 1:
+			break;
+		}
+		switch( (this.displayMode)[1] ) {
+		case 0:
+			this.imageLoop(this.fps);
+			break;
+		case 1:
+			if(!navigator.getUserMedia) js.Lib.alert("getUserMedia() is not supported or not enabled in your browser."); else {
+				var videoDiv = new $("#capture video");
+				videoDiv.height(videoDiv.width() / (16 / 9)).fadeIn();
+				navigator.getUserMedia({ video : true},function(stream) {
+					videoDiv.attr("src",navigator.webkitGetUserMedia?window.webkitURL.createObjectURL(stream):stream);
+				},function(err) {
+					js.Lib.alert("Error: " + err);
+				});
+			}
+			break;
+		}
+		mainDiv.addClass(this.displayMode[0]);
+		return this.displayMode;
+	}
 }
 var BrowserConfig = function() { }
 BrowserConfig.__name__ = true;
+var DisplayMode = { __ename__ : true, __constructs__ : ["PlaybackMode","CaptureMode"] }
+DisplayMode.PlaybackMode = ["PlaybackMode",0];
+DisplayMode.PlaybackMode.toString = $estr;
+DisplayMode.PlaybackMode.__enum__ = DisplayMode;
+DisplayMode.CaptureMode = ["CaptureMode",1];
+DisplayMode.CaptureMode.toString = $estr;
+DisplayMode.CaptureMode.__enum__ = DisplayMode;
 var Std = function() { }
 Std.__name__ = true;
 Std.string = function(s) {
@@ -272,8 +284,4 @@ if(typeof window != "undefined") {
 		return f(msg,[url + ":" + line]);
 	};
 }
-Browser.displayMode = DisplayMode.PlaybackMode;
-Browser.images = [];
-Browser.currentIndex = -1;
-Browser.numOfFrames = 0;
 Browser.main();

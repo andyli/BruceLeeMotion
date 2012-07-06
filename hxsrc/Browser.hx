@@ -9,20 +9,34 @@ using Reflect;
 using Type;
 using StringTools;
 using org.casalib.util.NumberUtil;
+using JQueryPlugins;
 
 class Browser {
-	static public var displayMode(default, setDisplayMode):DisplayMode = BrowserConfig.INIT_DISPLAY_MODE;
-	static var images:Array<String> = [];
-	static var currentIndex = -1;
-	static var numOfFrames = 0;
-	static var timer:Timer;
-	static var fps:Float;
 	
-	static function setDisplayMode(v:DisplayMode) {
+	static function getSuitableImageWidth():Int {
+		var w = new JQuery(Lib.document).width();
+		return if (w >= 800)
+			800;
+		else
+			320;
+	}
+	
+	static var instance:Browser;
+	
+	public var displayMode(default, setDisplayMode):DisplayMode;
+	var images:Array<String>;
+	var currentIndex = -1;
+	var numOfFrames = 0;
+	var timer:Timer;
+	var fps:Float;
+	
+	function setDisplayMode(v:DisplayMode) {
 		if (displayMode.enumEq(v)) return v;
 		
 		var pDisplayMode = displayMode;
 		displayMode = v;
+		
+		if (pDisplayMode == null) return v;
 		
 		var mainDiv = new JQuery("#main");
 		mainDiv.removeClass(pDisplayMode.enumConstructor());
@@ -59,7 +73,7 @@ class Browser {
 		return displayMode;
 	}
 	
-	static function imageLoop(fps:Float):Void {
+	function imageLoop(fps:Float):Void {
 		if (timer != null) timer.stop();
 		if (fps == 0) {
 			timer = null;
@@ -74,19 +88,12 @@ class Browser {
     		new JQuery("#playback-" + currentIndex).show();
     	}
     	
-    	Browser.fps = fps;
+    	this.fps = fps;
     	new JQuery("#toggle-play-btn").html("pause");
 	}
 	
-	static function getSuitableImageWidth():Int {
-		var w = new JQuery(Lib.document).width();
-		return if (w >= 800)
-			800;
-		else
-			320;
-	}
-	
-	static public function main():Void {
+	public function new():Void {
+		displayMode = BrowserConfig.INIT_DISPLAY_MODE;
 		
 		/*
 		 * PlaybackMode
@@ -97,12 +104,13 @@ class Browser {
 		
 		JQueryStatic.getJSON("motions/brucelee/comp_"+getSuitableImageWidth()+"/", {r:Math.random()}, function(json:Array<{comp:String}>){
 			numOfFrames = json.length;
+			images = [];
 			for (item in json) {
 				images.push(item.comp);
 			}
 			
 			var loaded = 0;
-			untyped new JQuery({}).imageLoader({
+			new JQuery({}).imageLoader({
 			    images: images,
 			    async: 5,
 			    complete: function(e, ui) {
@@ -156,5 +164,9 @@ class Browser {
 		new JQuery("#toggle-capture-btn").click(function(evt:jQuery.Event){			
 			displayMode = CaptureMode;
 		});
+	}
+	
+	static function main():Void {
+		instance = new Browser();
 	}
 }
