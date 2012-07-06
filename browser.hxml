@@ -3,5 +3,6 @@
 -cp hxsrc
 -lib jQueryExtern
 -lib casalib
+-lib html5
 --dead-code-elimination
 #--js-modern

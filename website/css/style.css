@@ -234,21 +234,20 @@ td { vertical-align: top; }
 	width: 100%;
 }
 
-#bruce
-{
+#playback {
 	width: 100%;
 	margin: 1em 0 1em 0;
 	padding: 0;
 	position: relative;
 }
 
-#bruce img {
+#playback img {
 	width: 100%;
 	margin: 0;
 	padding: 0;
 }
 
-#bruce .ui-progressbar {
+#playback .ui-progressbar {
     top: 10%;
 	bottom: 10%;
     left: 50px;
@@ -257,21 +256,60 @@ td { vertical-align: top; }
     position: absolute;
 }
 
-#bruce-control {
+#playback-control {
 	display: none;
 }
 
-.title
-{
+.PlaybackMode #playback-control {
+	display: inherit;
+}
+
+.PlaybackMode.loading #playback-control {
+	display: none;
+}
+
+#capture-control {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+}
+
+.title {
 	background-color:#C00;
 	color:#FFF;
 	padding-left:20px;
 	text-align: left;
 }
 
-#main
-{
+#main {
 	text-align:justify;
+	position: relative;
+}
+
+#capture video,
+#capture canvas {
+	width: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: none;
+}
+
+.CaptureMode #capture video,
+.CaptureMode #capture canvas {
+	display: inherit;
+}
+
+#capture-take-btn {
+	display: none;
+}
+
+.CaptureMode #capture-take-btn {
+	display: inherit;
+}
+
+.CaptureMode #toggle-capture-btn {
+	display: none;
 }
 
 #qr

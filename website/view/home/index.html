@@ -37,13 +37,23 @@
 	<img id="logo" src="img/logo.jpg" alt="Bruce Lee Motion" />
   </header>
   <div id="container">
-	<div id="main">
-		<div id="bruce">
-			<img src="motions/brucelee/original/thumb/0000_800.png" alt="Bruce Lee" />
+	<div id="main" class="PlaybackMode loading">
+		<div id="display">
+			<div id="playback">
+				<img src="motions/brucelee/original/thumb/0000_800.png" alt="Bruce Lee" />
+			</div>
+			<div id="capture">
+				<video autoplay>Your camera preview should be displayed here.</video>
+				<canvas></canvas>
+			</div>
 		</div>
-		<div id="bruce-control">
+		<div id="playback-control">
 			<button id="toggle-play-btn">pause</button>
 			<button id="toggle-slow-btn">slow-mo</button>
+		</div>
+		<div id="capture-control">
+			<button id="toggle-capture-btn">Insert your own!</button>
+			<button id="capture-take-btn">take picture</button>
 		</div>
 		
 		<div class="title"><h1>Introduction</h1></div>
