@@ -22,6 +22,7 @@ class Browser {
 	}
 	
 	static var instance:Browser;
+	static var isGetUserMediaSupported(default, never):Bool = untyped !!(navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
 	
 	public var displayMode(default, setDisplayMode):DisplayMode;
 	var images:Array<String>;
@@ -29,6 +30,56 @@ class Browser {
 	var numOfFrames = 0;
 	var timer:Timer;
 	var fps:Float;
+	var videoCapTimer:Timer;
+	
+	/*
+	 * draw video stream onto canvas so that we will have complete control on the display
+	 */
+	function startVideo():Void {
+		stopVideo(); //in case has already started
+		
+		var video = new JQuery("#capture video");
+	 	var canvasj = new JQuery("#capture canvas");
+		var canvas:Canvas = cast canvasj[0];
+		var ctx = canvas.getContext("2d");
+		var videoEle:HTMLVideoElement = cast video[0];
+		var canvasRatio = canvas.width/canvas.height;
+		var videoEleRatio = videoEle.videoWidth/videoEle.videoHeight;
+		
+		videoCapTimer = new Timer(Std.int(1/24 * 1000));
+	
+		if (canvasRatio == videoEleRatio) {
+			var scaledWidth = canvas.width;
+			var scaledHeight = canvas.height;
+			
+			videoCapTimer.run = function () {
+				ctx.drawImage(videoEle, 0, 0, scaledWidth, scaledHeight);
+			}
+		} else if (canvasRatio > videoEleRatio) {
+			var scaledWidth = canvas.width;
+			var scaledHeight = scaledWidth/videoEleRatio;
+			var y = (scaledHeight - canvas.height) * -0.5;
+			
+			videoCapTimer.run = function () {
+				ctx.drawImage(videoEle, 0, y, scaledWidth, scaledHeight);
+			}
+		} else {
+			var scaledHeight = canvas.height;
+			var scaledWidth = videoEleRatio * scaledHeight;
+			var x = (scaledWidth - canvas.width) * -0.5;
+			
+			videoCapTimer.run = function () {
+				ctx.drawImage(videoEle, x, 0, scaledWidth, scaledHeight);
+			}
+		}
+	}
+	
+	function stopVideo():Void {
+		if (videoCapTimer != null) {
+			videoCapTimer.stop();
+			videoCapTimer = null;
+		}
+	}
 	
 	function setDisplayMode(v:DisplayMode) {
 		var pDisplayMode = displayMode;
@@ -36,37 +87,46 @@ class Browser {
 		
 		if (pDisplayMode == null || pDisplayMode.enumEq(displayMode)) return displayMode;
 		
-		var mainDiv = new JQuery("#main");
-		mainDiv.removeClass(pDisplayMode.enumConstructor());
-		
 		switch (pDisplayMode) {
 			case PlaybackMode:
 				imageLoop(0);
 			case CaptureMode:
-				
+				stopVideo();
+				new JQuery("#capture video").removeAttr("src");
+				new JQuery("#capture").removeClass("captured");
+				new JQuery("#capture-take-btn").html("take picture");
 		}
 		
 		switch (displayMode) {
 			case PlaybackMode:
 				imageLoop(fps);
 			case CaptureMode:
-				if (untyped !navigator.getUserMedia) {
+				if (!isGetUserMediaSupported) {
 					Lib.alert("getUserMedia() is not supported or not enabled in your browser.");
 				} else {
-					var videoDiv = new JQuery("#capture video");
-				
-					videoDiv
-						.height(videoDiv.width() / (16/9))
-						.fadeIn();
+					var video = new JQuery("#capture video");
+					var display = new JQuery("#display");
 					
-					untyped navigator.getUserMedia({video: true}, function(stream) {
-						videoDiv.attr("src", navigator.webkitGetUserMedia ? window.webkitURL.createObjectURL(stream) : stream);
+					new JQuery("#capture canvas")
+						.attr("width", display.width())
+						.attr("height", display.height());
+					
+					(untyped navigator.getUserMedia)({video: true}, function(stream) {
+						untyped video.attr("src", navigator.webkitGetUserMedia ? window.webkitURL.createObjectURL(stream) : stream);
+						
+						video.bind("playing", function(evt:jQuery.Event){ //when start playing
+							new JQuery("#capture-take-btn").removeAttr("disabled");
+						
+							startVideo();
+						});
 					}, function(err) {
 						Lib.alert("Error: " + err);
 					});
 				}
 		}
 		
+		var mainDiv = new JQuery("#main");
+		mainDiv.removeClass(pDisplayMode.enumConstructor());
 		mainDiv.addClass(displayMode.enumConstructor());
 		return displayMode;
 	}
@@ -96,6 +156,31 @@ class Browser {
 		/*
 		 * PlaybackMode
 		 */
+		new JQuery("#toggle-play-btn").click(function(evt:jQuery.Event){
+    		if (new JQuery("#toggle-play-btn").html() == "pause") {
+    			imageLoop(0);
+    		} else {
+    			imageLoop(fps);
+    		}
+    	}).attr("disabled", true);
+    	
+    	new JQuery("#toggle-slow-btn").click(function(evt:jQuery.Event){
+    		var btn = new JQuery("#toggle-slow-btn");
+    		if (btn.html() == "slow-mo") {
+    			if (timer != null)
+    				imageLoop(2);
+    			else
+    				fps = 2;
+    			btn.html("normal");
+    		} else {
+    			if (timer != null)
+    				imageLoop(12);
+    			else
+    				fps = 12;
+    			btn.html("slow-mo");
+    		}
+    	}).attr("disabled", true);
+		
 		var progressbar = new JQuery("<div></div>").appendTo(new JQuery("#playback"));
 		untyped progressbar.progressbar();
 		progressbar.hide().fadeTo("slow", 0.8);
@@ -110,7 +195,7 @@ class Browser {
 			var loaded = 0;
 			new JQuery({}).imageLoader({
 			    images: images,
-			    async: 5,
+			    async: 10,
 			    complete: function(e, ui) {
 			    	progressbar.progressbar("value" , (++loaded).map(0, numOfFrames, 0, 100));
 			    },
@@ -121,32 +206,11 @@ class Browser {
 				    		new JQuery(item.img).attr("id", "playback-" + Std.string(item.i)).appendTo(playback).hide();
 				    	}
 				    	
-				    	imageLoop(12);
+				    	if (displayMode.enumEq(PlaybackMode))
+				    		imageLoop(12);
 				    	
-				    	new JQuery("#toggle-play-btn").click(function(evt:jQuery.Event){
-				    		if (new JQuery("#toggle-play-btn").html() == "pause") {
-				    			imageLoop(0);
-				    		} else {
-				    			imageLoop(fps);
-				    		}
-				    	});
-				    	
-				    	new JQuery("#toggle-slow-btn").click(function(evt:jQuery.Event){
-				    		var btn = new JQuery("#toggle-slow-btn");
-				    		if (btn.html() == "slow-mo") {
-				    			if (timer != null)
-				    				imageLoop(2);
-				    			else
-				    				fps = 2;
-				    			btn.html("normal");
-				    		} else {
-				    			if (timer != null)
-				    				imageLoop(12);
-				    			else
-				    				fps = 12;
-				    			btn.html("slow-mo");
-				    		}
-				    	});
+				    	new JQuery("#toggle-play-btn").removeAttr("disabled");
+				    	new JQuery("#toggle-slow-btn").removeAttr("disabled");
 				    	
 				    	new JQuery("#main").removeClass("loading");
 			    	});
@@ -157,11 +221,31 @@ class Browser {
 		/*
 		 * CaptureMode
 		 */
-		untyped navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-		
 		new JQuery("#toggle-capture-btn").click(function(evt:jQuery.Event){			
-			displayMode = CaptureMode;
+			switch (displayMode) {
+				case PlaybackMode:
+					displayMode = CaptureMode;
+					new JQuery("#toggle-capture-btn").html("cancel");
+				case CaptureMode:
+					displayMode = PlaybackMode;
+					new JQuery("#toggle-capture-btn").html("Insert your own!");
+			}
 		});
+		
+		new JQuery("#capture-take-btn").click(function(evt:jQuery.Event){
+			var capture = new JQuery("#capture");
+			if (!capture.hasClass("captured")) {
+				stopVideo();
+				
+				capture.addClass("captured");
+				new JQuery("#capture-take-btn").html("retake");
+			} else {
+				startVideo();
+				
+				capture.removeClass("captured");
+				new JQuery("#capture-take-btn").html("take picture");
+			}
+		}).attr("disabled", true);	
 	}
 	
 	static function main():Void {

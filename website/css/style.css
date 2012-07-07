@@ -261,7 +261,7 @@ td { vertical-align: top; }
 }
 
 .PlaybackMode #playback-control {
-	display: inherit;
+	display: inline;
 }
 
 .PlaybackMode.loading #playback-control {
@@ -295,9 +295,8 @@ td { vertical-align: top; }
 	display: none;
 }
 
-.CaptureMode #capture video,
 .CaptureMode #capture canvas {
-	display: inherit;
+	display: inline;
 }
 
 #capture-take-btn {
@@ -305,11 +304,7 @@ td { vertical-align: top; }
 }
 
 .CaptureMode #capture-take-btn {
-	display: inherit;
-}
-
-.CaptureMode #toggle-capture-btn {
-	display: none;
+	display: inline;
 }
 
 #qr

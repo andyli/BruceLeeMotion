@@ -4,6 +4,19 @@ var Browser = function() {
 	this.currentIndex = -1;
 	var _g = this;
 	this.setDisplayMode(DisplayMode.PlaybackMode);
+	new $("#toggle-play-btn").click(function(evt) {
+		if(new $("#toggle-play-btn").html() == "pause") _g.imageLoop(0); else _g.imageLoop(_g.fps);
+	}).attr("disabled",true);
+	new $("#toggle-slow-btn").click(function(evt) {
+		var btn = new $("#toggle-slow-btn");
+		if(btn.html() == "slow-mo") {
+			if(_g.timer != null) _g.imageLoop(2); else _g.fps = 2;
+			btn.html("normal");
+		} else {
+			if(_g.timer != null) _g.imageLoop(12); else _g.fps = 12;
+			btn.html("slow-mo");
+		}
+	}).attr("disabled",true);
 	var progressbar = new $("<div></div>").appendTo(new $("#playback"));
 	progressbar.progressbar(null);
 	progressbar.hide().fadeTo("slow",0.8);
@@ -17,7 +30,7 @@ var Browser = function() {
 			_g.images.push(item.comp);
 		}
 		var loaded = 0;
-		new $({ }).imageLoader({ images : _g.images, async : 5, complete : function(e,ui) {
+		new $({ }).imageLoader({ images : _g.images, async : 10, complete : function(e,ui) {
 			var a1 = 100 * (++loaded / _g.numOfFrames);
 			if(a1 != null) progressbar.progressbar("value",a1); else progressbar.progressbar("value");
 		}, allcomplete : function(e,ui) {
@@ -29,28 +42,37 @@ var Browser = function() {
 					++_g1;
 					new $(item.img).attr("id","playback-" + Std.string(item.i)).appendTo(playback).hide();
 				}
-				_g.imageLoop(12);
-				new $("#toggle-play-btn").click(function(evt) {
-					if(new $("#toggle-play-btn").html() == "pause") _g.imageLoop(0); else _g.imageLoop(_g.fps);
-				});
-				new $("#toggle-slow-btn").click(function(evt) {
-					var btn = new $("#toggle-slow-btn");
-					if(btn.html() == "slow-mo") {
-						if(_g.timer != null) _g.imageLoop(2); else _g.fps = 2;
-						btn.html("normal");
-					} else {
-						if(_g.timer != null) _g.imageLoop(12); else _g.fps = 12;
-						btn.html("slow-mo");
-					}
-				});
+				if(Type.enumEq(_g.displayMode,DisplayMode.PlaybackMode)) _g.imageLoop(12);
+				new $("#toggle-play-btn").removeAttr("disabled");
+				new $("#toggle-slow-btn").removeAttr("disabled");
 				new $("#main").removeClass("loading");
 			});
 		}});
 	});
-	navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 	new $("#toggle-capture-btn").click(function(evt) {
-		_g.setDisplayMode(DisplayMode.CaptureMode);
+		switch( (_g.displayMode)[1] ) {
+		case 0:
+			_g.setDisplayMode(DisplayMode.CaptureMode);
+			new $("#toggle-capture-btn").html("cancel");
+			break;
+		case 1:
+			_g.setDisplayMode(DisplayMode.PlaybackMode);
+			new $("#toggle-capture-btn").html("Insert your own!");
+			break;
+		}
 	});
+	new $("#capture-take-btn").click(function(evt) {
+		var capture = new $("#capture");
+		if(!capture.hasClass("captured")) {
+			_g.stopVideo();
+			capture.addClass("captured");
+			new $("#capture-take-btn").html("retake");
+		} else {
+			_g.startVideo();
+			capture.removeClass("captured");
+			new $("#capture-take-btn").html("take picture");
+		}
+	}).attr("disabled",true);
 };
 Browser.__name__ = true;
 Browser.getSuitableImageWidth = function() {
@@ -79,17 +101,19 @@ Browser.prototype = {
 		new $("#toggle-play-btn").html("pause");
 	}
 	,setDisplayMode: function(v) {
-		if(Type.enumEq(this.displayMode,v)) return v;
+		var _g = this;
 		var pDisplayMode = this.displayMode;
 		this.displayMode = v;
-		if(pDisplayMode == null) return v;
-		var mainDiv = new $("#main");
-		mainDiv.removeClass(pDisplayMode[0]);
+		if(pDisplayMode == null || Type.enumEq(pDisplayMode,this.displayMode)) return this.displayMode;
 		switch( (pDisplayMode)[1] ) {
 		case 0:
 			this.imageLoop(0);
 			break;
 		case 1:
+			this.stopVideo();
+			new $("#capture video").removeAttr("src");
+			new $("#capture").removeClass("captured");
+			new $("#capture-take-btn").html("take picture");
 			break;
 		}
 		switch( (this.displayMode)[1] ) {
@@ -97,19 +121,64 @@ Browser.prototype = {
 			this.imageLoop(this.fps);
 			break;
 		case 1:
-			if(!navigator.getUserMedia) js.Lib.alert("getUserMedia() is not supported or not enabled in your browser."); else {
-				var videoDiv = new $("#capture video");
-				videoDiv.height(videoDiv.width() / (16 / 9)).fadeIn();
+			if(!Browser.isGetUserMediaSupported) js.Lib.alert("getUserMedia() is not supported or not enabled in your browser."); else {
+				var video = new $("#capture video");
+				var display = new $("#display");
+				new $("#capture canvas").attr("width",display.width()).attr("height",display.height());
 				navigator.getUserMedia({ video : true},function(stream) {
-					videoDiv.attr("src",navigator.webkitGetUserMedia?window.webkitURL.createObjectURL(stream):stream);
+					video.attr("src",navigator.webkitGetUserMedia?window.webkitURL.createObjectURL(stream):stream);
+					video.bind("playing",function(evt) {
+						new $("#capture-take-btn").removeAttr("disabled");
+						_g.startVideo();
+					});
 				},function(err) {
 					js.Lib.alert("Error: " + err);
 				});
 			}
 			break;
 		}
+		var mainDiv = new $("#main");
+		mainDiv.removeClass(pDisplayMode[0]);
 		mainDiv.addClass(this.displayMode[0]);
 		return this.displayMode;
+	}
+	,stopVideo: function() {
+		if(this.videoCapTimer != null) {
+			this.videoCapTimer.stop();
+			this.videoCapTimer = null;
+		}
+	}
+	,startVideo: function() {
+		this.stopVideo();
+		var video = new $("#capture video");
+		var canvasj = new $("#capture canvas");
+		var canvas = canvasj[0];
+		var ctx = canvas.getContext("2d");
+		var videoEle = video[0];
+		var canvasRatio = canvas.width / canvas.height;
+		var videoEleRatio = videoEle.videoWidth / videoEle.videoHeight;
+		this.videoCapTimer = new haxe.Timer(1 / 24 * 1000 | 0);
+		if(canvasRatio == videoEleRatio) {
+			var scaledWidth = canvas.width;
+			var scaledHeight = canvas.height;
+			this.videoCapTimer.run = function() {
+				ctx.drawImage(videoEle,0,0,scaledWidth,scaledHeight);
+			};
+		} else if(canvasRatio > videoEleRatio) {
+			var scaledWidth = canvas.width;
+			var scaledHeight = scaledWidth / videoEleRatio;
+			var y = (scaledHeight - canvas.height) * -0.5;
+			this.videoCapTimer.run = function() {
+				ctx.drawImage(videoEle,0,y,scaledWidth,scaledHeight);
+			};
+		} else {
+			var scaledHeight = canvas.height;
+			var scaledWidth = videoEleRatio * scaledHeight;
+			var x = (scaledWidth - canvas.width) * -0.5;
+			this.videoCapTimer.run = function() {
+				ctx.drawImage(videoEle,x,0,scaledWidth,scaledHeight);
+			};
+		}
 	}
 }
 var BrowserConfig = function() { }
@@ -284,4 +353,5 @@ if(typeof window != "undefined") {
 		return f(msg,[url + ":" + line]);
 	};
 }
+Browser.isGetUserMediaSupported = !!(navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
 Browser.main();
