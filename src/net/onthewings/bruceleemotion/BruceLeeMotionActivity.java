@@ -238,6 +238,7 @@ public class BruceLeeMotionActivity extends Activity implements Callback {
     	lparam.height = viewHeight;
     	overlayView.setLayoutParams(lparam);
         
+    	overlayView.bringToFront();
     }
     
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
